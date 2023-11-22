@@ -12,7 +12,13 @@ class screen_day extends StatefulWidget {
 class _screen_dayState extends State<screen_day> {
   Map<String, dynamic> weatherData = {};
   bool isDarkMode = false;
-  bool isCelsius = true; // Dodana zmienna do śledzenia wyboru jednostki temperatury
+  bool isCelsius = true;
+  String selectedCity = 'Słupsk'; // Domyślne miasto
+  Map<String, String> cityApis = {
+    'Słupsk': 'https://api.open-meteo.com/v1/forecast?latitude=54.4641&longitude=17.0287&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m',
+    'Warszawa': 'https://api.open-meteo.com/v1/forecast?latitude=52.2298&longitude=21.0118&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m',
+    'Kraków': 'https://api.open-meteo.com/v1/forecast?latitude=50.0614&longitude=19.9366&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m',
+  };
 
   @override
   void initState() {
@@ -23,17 +29,17 @@ class _screen_dayState extends State<screen_day> {
   Future<void> fetchData() async {
     try {
       final Map<String, dynamic> data = await getWeatherData(
-          'https://api.open-meteo.com/v1/forecast?latitude=54.46&longitude=17.03&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m&timezone=Europe%2FBerlin');
+          cityApis[selectedCity] ?? cityApis['Słupsk']!);
       setState(() {
         weatherData = data;
       });
     } catch (e) {
-      print('Error fetching data: $e');
+      print('Błąd pobierania danych: $e');
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to fetch weather data. Please check your internet connection.'),
+          title: Text('Błąd'),
+          content: Text('Nie udało się pobrać danych pogodowych. Sprawdź swoje połączenie internetowe.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -107,6 +113,14 @@ class _screen_dayState extends State<screen_day> {
                       ],
                     ),
                     SizedBox(height: 1),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCitySelectionMenu(),
+                        SizedBox(width: 16.0),
+                        _buildUnitToggle(),
+                      ],
+                    ),
                     DataTable(
                       columns: [
                         DataColumn(label: Text('')),
@@ -140,6 +154,7 @@ class _screen_dayState extends State<screen_day> {
                       child: Text('Szczegółowe dane',
                         style: TextStyle(
                           color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),),
                     ),
                   ],
@@ -169,74 +184,75 @@ class _screen_dayState extends State<screen_day> {
               },
             ),
           ),
-          Positioned(
-            bottom: 14.0,
-            left: MediaQuery.of(context).size.width / 2 - 20,
-            child: IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () {
-                _showBottomMenu(context);
-              },
-            ),
-          ),
         ],
       ),
     );
   }
 
-  _showBottomMenu(BuildContext context) {
+
+  Widget _buildUnitToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.blueGrey[700] : Colors.cyan[300],
+        borderRadius: BorderRadius.circular(55.0),
+      ),
+      child: TextButton(
+        onPressed: () {
+          setState(() {
+            isCelsius = !isCelsius;
+          });
+        },
+        child: Text(
+          isCelsius ? '°C' : '°F',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18.0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCitySelectionMenu() {
+    return Column(
+      children: [
+        Text(
+          'Miasto: $selectedCity',
+          style: TextStyle(
+            fontSize: 18.0,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.blueGrey : Colors.cyan[300],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.location_city),
+              onPressed: () {
+                _showCitySelectionMenu(context);
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+
+  void _showCitySelectionMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return Container(
-          height: 70.0,
-          color: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.blueGrey[700] : Colors.cyan,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isCelsius = true;
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: isCelsius ? Colors.indigo[600] : Colors.black12,
-                  ),
-                  child: Text(
-                    '°C',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isCelsius = false;
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: isCelsius ? Colors.black12 : Colors.indigo[600],
-                  ),
-                  child: Text(
-                    '°F',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return CitySelectionMenu(
+          onCitySelected: (city) {
+            setState(() {
+              selectedCity = city;
+              fetchData();
+            });
+            Navigator.pop(context);
+          },
         );
       },
     );
@@ -312,7 +328,7 @@ class _screen_dayState extends State<screen_day> {
       final decodedData = json.decode(response.body);
       return getCurrentWeather(decodedData);
     } else {
-      throw Exception('Failed to load weather data');
+      throw Exception('Nie udało się załadować danych pogodowych');
     }
   }
 
@@ -359,5 +375,57 @@ class _screen_dayState extends State<screen_day> {
     } else {
       return {};
     }
+  }
+}
+
+class CitySelectionMenu extends StatelessWidget {
+  final Function(String) onCitySelected;
+
+  CitySelectionMenu({required this.onCitySelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.transparent,
+      height: 100.0,
+
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey,
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                buildCityButton('Słupsk'),
+                buildCityButton('Warszawa'),
+                buildCityButton('Kraków'),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildCityButton(String cityName) {
+    return ElevatedButton(
+      onPressed: () {
+        onCitySelected(cityName);
+      },
+      child: Text(
+        cityName,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
+    );
   }
 }

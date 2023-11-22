@@ -210,14 +210,12 @@ class _screen_weekState extends State<screen_week> {
     if (selectedTemperatureUnit == TemperatureUnit.celsius) {
       return '$temperature °C';
     } else {
-      // Convert Celsius to Fahrenheit
       double fahrenheit = (temperature * 9 / 5) + 32;
       return '$fahrenheit °F';
     }
   }
 }
 
-// Enum to represent temperature units
 enum TemperatureUnit {
   celsius,
   fahrenheit,
