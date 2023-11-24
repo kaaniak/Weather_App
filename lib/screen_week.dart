@@ -11,7 +11,24 @@ class screen_week extends StatefulWidget {
 class _screen_weekState extends State<screen_week> {
   bool isDarkMode = false;
   TemperatureUnit selectedTemperatureUnit = TemperatureUnit.celsius;
-  bool isCelsius = true; // Declare isCelsius here
+  bool isCelsius = true;
+  String selectedCity = 'Słupsk';
+
+  final Map<String, String> cityApis = {
+    'Słupsk': 'https://api.open-meteo.com/v1/forecast?latitude=54.4641&longitude=17.0287&daily=temperature_2m_max,temperature_2m_min&timezone=auto',
+    'Warszawa': 'https://api.open-meteo.com/v1/forecast?latitude=52.2297&longitude=21.0122&daily=temperature_2m_max,temperature_2m_min&timezone=auto',
+    'Kraków': 'https://api.open-meteo.com/v1/forecast?latitude=50.0647&longitude=19.9450&daily=temperature_2m_max,temperature_2m_min&timezone=auto',
+  };
+
+  Future<List<Map<String, dynamic>>> fetchWeekWeather(String apiUrl) async {
+    try {
+      Map<String, dynamic> weatherData = await getWeatherJson(apiUrl);
+      List<Map<String, dynamic>> weekWeather = getWeekWeather(weatherData);
+      return weekWeather;
+    } catch (e) {
+      throw Exception('Failed to fetch week weather: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +50,7 @@ class _screen_weekState extends State<screen_week> {
               children: [
                 Expanded(
                   child: FutureBuilder<List<Map<String, dynamic>>>(
-                    future: fetchWeekWeather(),
+                    future: fetchWeekWeather(cityApis[selectedCity]!),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return ListView.builder(
@@ -95,6 +112,34 @@ class _screen_weekState extends State<screen_week> {
                       });
                     },
                   ),
+                  DropdownButton<String>(
+                    value: selectedCity,
+                    icon: Icon(Icons.location_city),
+                    iconSize: 24,
+                    elevation: 16,
+                    style: TextStyle(color: Colors.white),
+                    underline: Container(
+                      height: 2,
+                      color: Colors.white,
+                    ),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedCity = newValue!;
+                      });
+                    },
+                    items: cityApis.keys.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                   IconButton(
                     icon: Icon(Icons.menu),
                     onPressed: () {
@@ -117,55 +162,56 @@ class _screen_weekState extends State<screen_week> {
   }
 
   void _showTemperatureUnitSelectionMenu(BuildContext context) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.blueGrey[700] : Colors.cyan,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isCelsius = true;
-                    selectedTemperatureUnit = TemperatureUnit.celsius;
-                  });
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  primary: isCelsius ? Colors.indigo[600] : Colors.black12,
-                ),
-                child: Text(
-                  '°C',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+        return Dialog(
+          backgroundColor: isDarkMode ? Colors.blueGrey[700] : Colors.cyan,
+          child: Container(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      isCelsius = true;
+                      selectedTemperatureUnit = TemperatureUnit.celsius;
+                    });
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: isCelsius ? Colors.indigo[600] : Colors.black12,
+                  ),
+                  child: Text(
+                    '°C',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isCelsius = false;
-                    selectedTemperatureUnit = TemperatureUnit.fahrenheit;
-                  });
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  primary: isCelsius ? Colors.black12 : Colors.indigo[600],
-                ),
-                child: Text(
-                  '°F',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      isCelsius = false;
+                      selectedTemperatureUnit = TemperatureUnit.fahrenheit;
+                    });
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: isCelsius ? Colors.black12 : Colors.indigo[600],
+                  ),
+                  child: Text(
+                    '°F',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -220,4 +266,3 @@ enum TemperatureUnit {
   celsius,
   fahrenheit,
 }
-

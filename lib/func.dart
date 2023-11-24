@@ -78,7 +78,7 @@ Widget _buildDayRow(String rowText, String statName, List<Map<String, dynamic>> 
   );
 }
 
-/* ALTERNATYWNE SKRYPTY KTÓRE TEŻ DZIAŁAJĄ
+/* ALTERNATYWny SKRYPT KTÓRE TEŻ DZIAŁAJĄ
 Widget _buildWeekRow(int dayNumber, List<Map<String, dynamic>> currentWeather){
   return Row(
     children: [

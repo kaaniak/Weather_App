@@ -13,7 +13,7 @@ class _screen_dayState extends State<screen_day> {
   Map<String, dynamic> weatherData = {};
   bool isDarkMode = false;
   bool isCelsius = true;
-  String selectedCity = 'Słupsk'; // Domyślne miasto
+  String selectedCity = 'Słupsk';
   Map<String, String> cityApis = {
     'Słupsk': 'https://api.open-meteo.com/v1/forecast?latitude=54.4641&longitude=17.0287&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m',
     'Warszawa': 'https://api.open-meteo.com/v1/forecast?latitude=52.2298&longitude=21.0118&hourly=temperature_2m,relative_humidity_2m,rain,cloud_cover,wind_speed_10m',
@@ -386,12 +386,11 @@ class CitySelectionMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.transparent,
-      height: 100.0,
+      height: 60,
 
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey,
+          color: Colors.cyan,
         ),
         child: Column(
           children: [
